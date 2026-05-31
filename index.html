@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulnerability Scanner | Security Assessment Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0c10 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.85rem;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 0.5rem 1.5rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .scan-card {
+            background: rgba(30, 32, 44, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 16px;
+            background: #1e1f2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: white;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .scan-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .scan-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .scan-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .example-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .example-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            color: rgba(255,255,255,0.7);
+            transition: all 0.3s;
+        }
+
+        .example-btn:hover {
+            background: rgba(59,130,246,0.2);
+            color: white;
+        }
+
+        .scanning-box {
+            background: rgba(30, 32, 44, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 50px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .radar {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .radar-circle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: pulse 1.5s ease-out infinite;
+        }
+
+        .radar-circle:nth-child(2) { animation-delay: 0.5s; }
+        .radar-circle:nth-child(3) { animation-delay: 1s; }
+
+        .radar-sweep {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, transparent 0deg, rgba(59,130,246,0.3) 180deg, transparent 360deg);
+            animation: spin 2s linear infinite;
+        }
+
+        .radar-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #3b82f6;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(59,130,246,0.2);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.3); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        .score-card {
+            background: rgba(30, 32, 44, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 25px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .score-chart {
+            position: relative;
+            width: 160px;
+            height: 160px;
+        }
+
+        .score-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .score-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .score-label {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .score-info {
+            flex: 1;
+        }
+
+        .score-info h3 {
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .score-info p {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.85rem;
+        }
+
+        .score-info .trusted-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-top: 8px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-card {
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .status-safe { 
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        
+        .status-medium { 
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            animation: yellowPulse 2s ease-in-out infinite;
+        }
+        
+        .status-vulnerable { 
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            animation: redPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes yellowPulse {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        @keyframes redPulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .status-icon { font-size: 3rem; margin-bottom: 10px; }
+        .status-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 5px; }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: rgba(30, 32, 44, 0.8);
+            padding: 15px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .summary-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .summary-label {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.75rem;
+            margin-top: 5px;
+        }
+
+        .finding-card {
+            background: rgba(30, 32, 44, 0.8);
+            border-left: 4px solid;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            transition: transform 0.2s;
+        }
+
+        .finding-card:hover {
+            transform: translateX(5px);
+        }
+
+        .finding-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .finding-name {
+            font-weight: bold;
+            color: white;
+        }
+
+        .severity-badge {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .severity-critical { background: #dc2626; }
+        .severity-high { background: #f59e0b; }
+        .severity-medium { background: #3b82f6; }
+        .severity-low { background: #6b7280; }
+        .severity-info { background: #10b981; }
+
+        .finding-desc {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.85rem;
+            margin: 8px 0;
+        }
+
+        .finding-fix {
+            background: rgba(16, 185, 129, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-top: 8px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .no-issues {
+            background: rgba(30, 32, 44, 0.8);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            border: 1px solid rgba(16,185,129,0.3);
+        }
+
+        .no-issues i {
+            font-size: 3rem;
+            color: #10b981;
+            margin-bottom: 15px;
+        }
+
+        .no-issues h3 {
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .no-issues p {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .chat-section {
+            background: rgba(30, 32, 44, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 20px;
+            margin-top: 30px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .chat-header i {
+            font-size: 1.5rem;
+            color: #8b5cf6;
+        }
+
+        .chat-header h3 {
+            color: white;
+        }
+
+        .chat-messages {
+            height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            max-width: 85%;
+        }
+
+        .message.user {
+            background: #3b82f6;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.bot {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.9);
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            background: #1e1f2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: white;
+            outline: none;
+        }
+
+        .chat-send {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255,255,255,0.3);
+            font-size: 0.75rem;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+            .score-card { flex-direction: column; text-align: center; }
+            .input-group { flex-direction: column; }
+            .scan-btn { width: 100%; }
+            .logout-btn { top: 5px; right: 5px; padding: 8px 12px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="user-info" id="userInfo"></div>
+            <button class="logout-btn" onclick="logout()" title="Logout">🚪 Logout</button>
+            <h1>🛡️ VulnScanner Pro</h1>
+            <p>Professional Vulnerability Assessment Platform</p>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-item"><div class="stat-number">50+</div><div class="stat-label">Checks</div></div>
+            <div class="stat-item"><div class="stat-number">CVE</div><div class="stat-label">Database</div></div>
+            <div class="stat-item"><div class="stat-number">AI</div><div class="stat-label">Assistant</div></div>
+            <div class="stat-item"><div class="stat-number">OWASP</div><div class="stat-label">Compliant</div></div>
+        </div>
+
+        <div class="scan-card">
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="https://example.com" value="https://google.com">
+                <button class="scan-btn" id="scanBtn">🔍 Start Scan</button>
+            </div>
+            <div class="example-buttons">
+                <button class="example-btn" onclick="setUrl('https://google.com')">🟢 Google</button>
+                <button class="example-btn" onclick="setUrl('https://instagram.com')">🟢 Instagram</button>
+                <button class="example-btn" onclick="setUrl('https://whatsapp.com')">🟢 WhatsApp</button>
+                <button class="example-btn" onclick="setUrl('http://example.com')">🟡 Example (HTTP)</button>
+                <button class="example-btn" onclick="setUrl('https://pentest-ground.com:4280')">🔴 DVWA</button>
+            </div>
+        </div>
+
+        <div id="results"></div>
+
+        <div class="chat-section">
+            <div class="chat-header">
+                <i>🤖</i>
+                <h3>AI Security Assistant</h3>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">👋 Hello! Ask me about XSS, SQL Injection, CSRF, or how to fix vulnerabilities!</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Ask about vulnerabilities...">
+                <button class="chat-send" onclick="sendChat()">Send</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>VulnScanner Pro | OWASP Top 10 Compliant | Enterprise Security Assessment</p>
+        </div>
+    </div>
+
+    <script>
+        let securityChart = null;
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/check-auth');
+                const data = await response.json();
+                if (!data.authenticated) {
+                    window.location.href = '/login';
+                } else if (data.user) {
+                    document.getElementById('userInfo').textContent = '👤 ' + data.user.name;
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/login';
+            } catch (error) {
+                window.location.href = '/login';
+            }
+        }
+
+        function setUrl(url) {
+            document.getElementById('urlInput').value = url;
+        }
+
+        function showScanningAnimation() {
+            document.getElementById('results').innerHTML = `
+                <div class="scanning-box">
+                    <div class="radar">
+                        <div class="radar-circle"></div>
+                        <div class="radar-circle"></div>
+                        <div class="radar-circle"></div>
+                        <div class="radar-sweep"></div>
+                        <div class="radar-dot"></div>
+                    </div>
+                    <div class="spinner"></div>
+                    <p style="color: #60a5fa;">🔍 Scanning website...</p>
+                    <p style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">Testing for vulnerabilities and analyzing security headers</p>
+                </div>
+            `;
+        }
+
+        function displayResults(data) {
+            // Use the security_score from the server or calculate it
+            let score = data.security_score;
+            
+            if (score === undefined) {
+                // Fallback calculation if server doesn't provide score
+                score = 100;
+                if (data.summary.critical > 0) score = Math.max(10, score - (data.summary.critical * 30));
+                if (data.summary.high > 0) score = Math.max(20, score - (data.summary.high * 20));
+                if (data.summary.medium > 0) score = Math.max(40, score - (data.summary.medium * 10));
+                if (data.summary.low > 0) score = Math.max(60, score - (data.summary.low * 3));
+                score = Math.max(0, Math.min(100, score));
+            }
+
+            let statusClass = '', statusIcon = '', statusTitle = '', statusBgColor = '';
+            
+            if (data.status === 'safe') {
+                statusClass = 'status-safe';
+                statusIcon = '🟢';
+                statusTitle = 'SECURED WEBSITE';
+                statusBgColor = '#10b981';
+            } else if (data.status === 'medium_risk') {
+                statusClass = 'status-medium';
+                statusIcon = '🟡';
+                statusTitle = 'MEDIUM RISK DETECTED';
+                statusBgColor = '#f59e0b';
+            } else {
+                statusClass = 'status-vulnerable';
+                statusIcon = '🔴';
+                statusTitle = 'VULNERABLE WEBSITE';
+                statusBgColor = '#ef4444';
+            }
+
+            let html = `
+                <div class="score-card">
+                    <div class="score-chart">
+                        <canvas id="securityChart" width="160" height="160"></canvas>
+                        <div class="score-text">
+                            <div class="score-number">${score}</div>
+                            <div class="score-label">Security Score</div>
+                        </div>
+                    </div>
+                    <div class="score-info">
+                        <h3>Security Assessment Report</h3>
+                        <p>Found ${data.summary.total} issue(s): ${data.summary.critical || 0} critical, ${data.summary.high || 0} high, ${data.summary.medium || 0} medium, ${data.summary.low || 0} low, ${data.summary.info || 0} info</p>
+                        ${data.is_known_secure ? '<span class="trusted-badge">✅ Trusted Secure Platform</span>' : ''}
+                    </div>
+                </div>
+                <div class="status-card ${statusClass}" style="background: linear-gradient(135deg, ${statusBgColor}, ${statusBgColor}dd);">
+                    <div class="status-icon">${statusIcon}</div>
+                    <div class="status-title">${statusTitle}</div>
+                    <p style="font-size: 1.1rem; margin-top: 5px;">${escapeHtml(data.status_message)}</p>
+                </div>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-number" style="color: #ef4444;">${data.summary.critical || 0}</div>
+                        <div class="summary-label">Critical</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-number" style="color: #f59e0b;">${data.summary.high || 0}</div>
+                        <div class="summary-label">High</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-number" style="color: #3b82f6;">${data.summary.medium || 0}</div>
+                        <div class="summary-label">Medium</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-number" style="color: #10b981;">${score}</div>
+                        <div class="summary-label">Score / 100</div>
+                    </div>
+                </div>
+            `;
+
+            if (data.findings && data.findings.length > 0) {
+                html += `<h3 style="color: white; margin: 20px 0 10px;">📋 Detailed Findings</h3>`;
+                for (let f of data.findings) {
+                    let severityClass = '', borderColor = '';
+                    if (f.severity === 'Critical') { severityClass = 'severity-critical'; borderColor = '#dc2626'; }
+                    else if (f.severity === 'High') { severityClass = 'severity-high'; borderColor = '#f59e0b'; }
+                    else if (f.severity === 'Medium') { severityClass = 'severity-medium'; borderColor = '#3b82f6'; }
+                    else if (f.severity === 'Low') { severityClass = 'severity-low'; borderColor = '#6b7280'; }
+                    else { severityClass = 'severity-info'; borderColor = '#10b981'; }
+                    
+                    html += `
+                        <div class="finding-card" style="border-left-color: ${borderColor}">
+                            <div class="finding-header">
+                                <span class="finding-name">${escapeHtml(f.name)}</span>
+                                <span class="severity-badge ${severityClass}">${f.severity}</span>
+                            </div>
+                            <div class="finding-desc">${escapeHtml(f.desc)}</div>
+                            <div class="finding-fix"><strong>🔧 Fix:</strong> ${escapeHtml(f.fix)}</div>
+                        </div>
+                    `;
+                }
+            } else {
+                html += `
+                    <div class="no-issues">
+                        <i>✅</i>
+                        <h3>No Vulnerabilities Detected</h3>
+                        <p>This website passed all security checks.</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('results').innerHTML = html;
+
+            // Create the donut chart
+            if (securityChart) securityChart.destroy();
+            const ctx = document.getElementById('securityChart').getContext('2d');
+            
+            let gradient;
+            if (score >= 85) {
+                gradient = ctx.createLinearGradient(0, 0, 160, 160);
+                gradient.addColorStop(0, '#10b981');
+                gradient.addColorStop(1, '#059669');
+            } else if (score >= 50) {
+                gradient = ctx.createLinearGradient(0, 0, 160, 160);
+                gradient.addColorStop(0, '#fbbf24');
+                gradient.addColorStop(1, '#f59e0b');
+            } else {
+                gradient = ctx.createLinearGradient(0, 0, 160, 160);
+                gradient.addColorStop(0, '#ef4444');
+                gradient.addColorStop(1, '#dc2626');
+            }
+            
+            securityChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [score, 100 - score],
+                        backgroundColor: [gradient, 'rgba(255,255,255,0.08)'],
+                        borderWidth: 0,
+                        cutout: '70%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { tooltip: { enabled: false }, legend: { display: false } }
+                }
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function sendChat() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const chatDiv = document.getElementById('chatMessages');
+            chatDiv.innerHTML += `<div class="message user">${escapeHtml(message)}</div>`;
+            input.value = '';
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+
+            chatDiv.innerHTML += `<div class="message bot">🤔 Thinking...</div>`;
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vulnerability: message })
+                });
+                const data = await response.json();
+                const thinking = chatDiv.querySelector('.message.bot:last-child');
+                if (thinking) thinking.remove();
+                chatDiv.innerHTML += `<div class="message bot">${escapeHtml(data.reply)}</div>`;
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+            } catch (error) {
+                const thinking = chatDiv.querySelector('.message.bot:last-child');
+                if (thinking) thinking.remove();
+                chatDiv.innerHTML += `<div class="message bot">⚠️ Error</div>`;
+            }
+        }
+
+        async function startScan() {
+            const url = document.getElementById('urlInput').value.trim();
+            const scanBtn = document.getElementById('scanBtn');
+            
+            if (!url) { alert('Please enter a URL'); return; }
+
+            scanBtn.disabled = true;
+            scanBtn.textContent = '⏳ Scanning...';
+            showScanningAnimation();
+
+            try {
+                const response = await fetch('/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    setTimeout(() => displayResults(data), 500);
+                } else {
+                    document.getElementById('results').innerHTML = `
+                        <div class="status-card status-vulnerable">
+                            <div class="status-icon">❌</div>
+                            <div class="status-title">Error</div>
+                            <p>${escapeHtml(data.error || 'Failed to scan. Make sure the URL is valid.')}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="status-card status-vulnerable">
+                        <div class="status-icon">❌</div>
+                        <div class="status-title">Error</div>
+                        <p>Failed to scan. Make sure the URL is valid and the server is running.</p>
+                    </div>
+                `;
+            } finally {
+                scanBtn.disabled = false;
+                scanBtn.textContent = '🔍 Start Scan';
+            }
+        }
+
+        window.escapeHtml = escapeHtml;
+        window.displayResults = displayResults;
+        checkAuth();
+        
+        document.getElementById('scanBtn').addEventListener('click', startScan);
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') startScan();
+        });
+    </script>
+</body>
+</html>
