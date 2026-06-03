@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 import urllib3
 
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
@@ -20,12 +21,22 @@ app.secret_key = secrets.token_hex(32)
 # ============================================================
 # EMAIL CONFIGURATION
 # ============================================================
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'vulnscannerservice@gmail.com'
-app.config['MAIL_PASSWORD'] = 'csbyypfhergwdbqi'
-app.config['MAIL_DEFAULT_SENDER'] = 'vulnscannerservice@gmail.com'
+# app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+# app.config['MAIL_PORT'] = 587
+# app.config['MAIL_USE_TLS'] = True
+# app.config['MAIL_USERNAME'] = 'vulnscannerservice@gmail.com'
+# app.config['MAIL_PASSWORD'] = 'csbyypfhergwdbqi'
+# app.config['MAIL_DEFAULT_SENDER'] = 'vulnscannerservice@gmail.com'
+
+import os
+
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True') == 'True'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'vulnscannerservice@gmail.com')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'csbyypfhergwdbqi')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'vulnscannerservice@gmail.com')
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 mail = Mail(app)
 
